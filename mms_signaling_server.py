@@ -18,6 +18,24 @@ node_lock = threading.Lock()
 HEARTBEAT_TIMEOUT = 30  # seconds
 CLEANUP_INTERVAL = 10   # seconds
 
+@app.route('/')
+def index():
+    """Root endpoint - Service information"""
+    return jsonify({
+        'service': 'Mobile Mesh Sentinel 2.0 - Signaling Server',
+        'status': 'online',
+        'version': '2.0',
+        'endpoints': {
+            'health': '/health',
+            'register': '/register (POST)',
+            'heartbeat': '/heartbeat (POST)',
+            'discover': '/discover (POST)',
+            'unregister': '/unregister (POST)',
+            'nodes': '/nodes (GET)'
+        },
+        'active_nodes': len(active_nodes),
+        'timestamp': datetime.now().isoformat()
+    })
 class Node:
     def __init__(self, node_id, ip_address, port, public_key=None):
         self.node_id = node_id
