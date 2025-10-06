@@ -5,6 +5,8 @@ Phase 1: Node Registration & Discovery
 
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
+# ADD THIS LINE after the imports
+import os
 import threading
 import time
 
@@ -17,6 +19,8 @@ node_lock = threading.Lock()
 # Configuration
 HEARTBEAT_TIMEOUT = 30  # seconds
 CLEANUP_INTERVAL = 10   # seconds
+# ADD THIS LINE after CLEANUP_INTERVAL = 10
+PORT = int(os.environ.get('PORT', 5000)) 
 
 @app.route('/')
 def index():
@@ -25,6 +29,7 @@ def index():
         'service': 'Mobile Mesh Sentinel 2.0 - Signaling Server',
         'status': 'online',
         'version': '2.0',
+        'deployment': 'Railway Cloud',
         'endpoints': {
             'health': '/health',
             'register': '/register (POST)',
@@ -83,12 +88,16 @@ def register_node():
         public_key = data.get('public_key', None)
         
         # Get client IP
-        ip_address = request.remote_addr
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ',' in ip_address:
+            ip_address = ip_address.split(',')[0].strip()
         
         with node_lock:
             # Create or update node
             node = Node(node_id, ip_address, port, public_key)
             active_nodes[node_id] = node
+
+        print(f"[REGISTER] {node_id} from {ip_address}:{port}")
         
         return jsonify({
             'success': True,
@@ -97,6 +106,7 @@ def register_node():
         }), 201
     
     except Exception as e:
+        print(f"[ERROR] Registration failed: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -183,6 +193,7 @@ def unregister_node():
         with node_lock:
             if node_id in active_nodes:
                 del active_nodes[node_id]
+                print(f"[UNREGISTER] {node_id}")
                 return jsonify({
                     'success': True,
                     'message': f'Node {node_id} unregistered'
@@ -234,12 +245,13 @@ cleanup_thread = threading.Thread(target=cleanup_stale_nodes, daemon=True)
 cleanup_thread.start()
 
 if __name__ == '__main__':
-    print("=" * 50)
+    print("=" * 60)
     print("Mobile Mesh Sentinel 2.0 - Signaling Server")
-    print("=" * 50)
+    print("=" * 60)
+    print(f"Deployment: Railway Cloud")
+    print(f"Port: {PORT}")
     print(f"Heartbeat timeout: {HEARTBEAT_TIMEOUT}s")
     print(f"Cleanup interval: {CLEANUP_INTERVAL}s")
-    print("Server starting on http://0.0.0.0:5000")
-    print("=" * 50)
+    print("=" * 60)
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=PORT, debug=False)

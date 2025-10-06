@@ -53,28 +53,35 @@ class MeshNode:
     def register(self):
         """Register this node with the signaling server"""
         try:
+            print("🔄 Connecting to signaling server...")
             response = requests.post(
                 f"{self.server_url}/register",
                 json={
                     'node_id': self.node_id,
                     'port': self.listen_port
                 },
-                timeout=5
+                timeout=10
             )
             
             if response.status_code == 201:
                 data = response.json()
                 print(f"✅ Registered successfully!")
-                print(f"   IP: {data['node_info']['ip_address']}")
-                print(f"   Port: {data['node_info']['port']}\n")
+                print(f"   Public IP: {data['node_info']['ip_address']}")
+                print(f"   Port: {data['node_info']['port']}")
+                print(f"\n⚠️  IMPORTANT: Ensure port {self.listen_port} is forwarded on your router")
+                print(f"   for P2P connections to work across networks.\n")
                 return True
             else:
                 print(f"❌ Registration failed: {response.json()}")
                 return False
                 
+        except requests.exceptions.ConnectionError:
+            print(f"❌ Cannot connect to signaling server at {self.server_url}")
+            print(f"   Please check if the server is running and URL is correct.")
+            return False
         except Exception as e:
             print(f"❌ Registration error: {e}")
-            return False
+            return False        
     
     def send_heartbeat(self):
         """Send periodic heartbeat to signaling server"""
@@ -83,7 +90,7 @@ class MeshNode:
                 response = requests.post(
                     f"{self.server_url}/heartbeat",
                     json={'node_id': self.node_id},
-                    timeout=5
+                    timeout=10
                 )
                 
                 if response.status_code == 200:
@@ -103,7 +110,7 @@ class MeshNode:
                 response = requests.post(
                     f"{self.server_url}/discover",
                     json={'node_id': self.node_id},
-                    timeout=5
+                    timeout=10  
                 )
                 
                 if response.status_code == 200:
@@ -216,6 +223,14 @@ class MeshNode:
             sock.close()
             return True
             
+        except socket.timeout:
+            print(f"❌ Connection timeout to {peer_id}")
+            print(f"⚠️  Peer may be behind NAT/firewall without port forwarding")
+            return False
+        except ConnectionRefusedError:
+            print(f"❌ Connection refused by {peer_id}")
+            print(f"⚠️  Peer may not be listening or port is blocked")
+            return False
         except Exception as e:
             print(f"❌ Send error: {e}")
             return False
@@ -260,9 +275,15 @@ def main():
     """Main interactive loop"""
     # Configuration - DIFFERENT FROM NODE_ALPHA
     NODE_ID = "Node_Beta"
-    SERVER_URL = "http://127.0.0.1:5000"
+    SERVER_URL = "https://mobile-mesh-sentinel-production.up.railway.app"
     LISTEN_PORT = 8002  # Different port!
-    
+    print("\n" + "="*60)
+    print("⚠️  PORT FORWARDING REQUIRED FOR P2P")
+    print("="*60)
+    print(f"To receive messages from peers across networks:")
+    print(f"1. Forward port {LISTEN_PORT} on your router to this device")
+    print(f"2. Ensure firewall allows incoming connections on port {LISTEN_PORT}")
+    print("="*60 + "\n")
     # Create and start node
     node = MeshNode(NODE_ID, SERVER_URL, LISTEN_PORT)
     
