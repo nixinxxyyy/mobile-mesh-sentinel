@@ -1,2 +1,2 @@
-Flask==3.0.0          ← The web framework we're using
-gunicorn==21.2.0      ← A production web server (better than Flask's built-in one)
+Flask==3.0.0          
+gunicorn==21.2.0      
