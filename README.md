@@ -1,4 +1,4 @@
-# Mobile Mesh Sentinel 2.0 (MMS 2.0)
+# Mobile Mesh Sentinel (MMS)
 
 A custom-built, decentralized peer-to-peer (P2P) mesh networking system designed to enable direct communication and data exchange between heterogeneous devices across different network environments.
 
